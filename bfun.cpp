@@ -20,7 +20,7 @@ int main (int argc, char *argv[])
     std::string arg;
     if (argc == 3)
     {
-        std::string s (argv[2]);
+        std::string s(argv[2]);
         arg = s;
     }
     if (argc == 2 || (argc == 3 && (arg == "-s" || arg == "-d")))

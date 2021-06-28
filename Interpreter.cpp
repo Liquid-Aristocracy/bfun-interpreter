@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 #include "Interpreter.h"
 
 std::string escape(char c)
@@ -14,6 +15,30 @@ std::string escape(char c)
     else
         ret.push_back(c);
     return ret;
+}
+
+Interpreter::Interpreter(std::string c)
+{
+    code = c;
+    codeptr = 0;
+    codebuf.clear();
+    currentstate = 0;
+    mvstep = 0;
+    caval = 0;
+    positive = true;
+    startpoints.clear();
+    size_t i = 0;
+    while (i < code.length() - 1)
+    {
+        char cr = code[i];
+        if (cr != '>' && cr != '<' && cr != '+' && cr != '-' && cr != '[' && cr != ']' && cr != ',' && cr != '.')
+        {
+            code.erase(i, 1);
+        } else
+        {
+            i ++;
+        }
+    }
 }
 
 void Interpreter::printcode(void)

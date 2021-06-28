@@ -1,7 +1,7 @@
 #ifndef INTERPRETER_H_
 #define INTERPRETER_H_
 
-#include <string>
+#include <cstring>
 #include <vector>
 #include "TM.h"
 

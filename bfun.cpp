@@ -7,7 +7,7 @@
 void printusage()
 {
     std::cout << "bfun - a brainfuck interpreter." << std::endl;
-    std::cout << "Usage: bfun [FILE] {s|d[DEFAULT]}" << std::endl;
+    std::cout << "Usage: ./bfun [FILE] {s|d[DEFAULT]}" << std::endl;
     std::cout << "where [FILE] is the bf source file." << std::endl;
     std::cout << "Mode -s: silent, mode -d: debug (default mode)." << std::endl;
 }

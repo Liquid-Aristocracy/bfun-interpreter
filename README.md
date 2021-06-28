@@ -17,7 +17,7 @@ For silent mode:
 
 Should output:
 
-~~~bash
+~~~
 Hello World!
 
 ~~~

@@ -19,7 +19,6 @@ Should output:
 
 ~~~
 Hello World!
-
 ~~~
 
 For debug mode:

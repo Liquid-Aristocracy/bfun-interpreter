@@ -43,17 +43,20 @@ Interpreter::Interpreter(std::string c)
 
 void Interpreter::printcode(void)
 {
-    std::cout << code << std::endl;
+    std::cout << code;
 }
 
 void Interpreter::changestate(int nextstate)
 {
-    std::cout << "*****";
-    if (startpoints.size() > 0)
+    if (currentstate < 5 && (codebuf.size() != 0 || currentstate == 0))
     {
-        std::cout << " layer " << startpoints.size();
+        std::cout << "*****";
+        if (startpoints.size() > 0)
+        {
+            std::cout << " layer " << startpoints.size();
+        }
+        std::cout << std::endl;
     }
-    std::cout << std::endl;
     switch (currentstate)
     {
         case 0: // init/fin
@@ -84,22 +87,26 @@ void Interpreter::changestate(int nextstate)
             if (codebuf == ",") // i
             {
                 std::cout << "Get input from user." << std::endl;
-                char userin[1];
+                char userin;
                 std::cout << "Please input a character to store in current cell." << std::endl;
                 std::cout << "If you prefer to input an ASCII code, press enter." << std::endl;
                 std::cout << "Character: ";
-                std::cin.get(userin, 1);
-                if (userin[0] == '\n')
+                std::cin.sync();
+                std::cin.ignore(std::cin.rdbuf()->in_avail(), '\n');
+                userin = std::cin.get();
+                if (userin == '\n')
                 {
                     int asciicode;
                     std::cout << "Ascii code: ";
+                    std::cin.sync();
+                    std::cin.ignore(std::cin.rdbuf()->in_avail(), '\n');
                     std::cin >> asciicode;
-                    userin[0] = (char) asciicode;
+                    userin = (char) asciicode;
                 }
                 std::string chartoprint;
-                chartoprint = escape(userin[0]);
-                std::cout << "Got character: " << chartoprint << " with ASCII code " << (int) userin[0] << "." << std::endl;
-                tm.input((unsigned char) userin[0]);
+                chartoprint = escape(userin);
+                std::cout << "Got character: " << chartoprint << " with ASCII code " << (int) userin << "." << std::endl;
+                tm.input((unsigned char) userin);
             } else if (codebuf == ".") // o
             {
                 unsigned char out;
@@ -111,29 +118,33 @@ void Interpreter::changestate(int nextstate)
             }
             break;
         case 4: // loop
-            std::cout << "Code: " << codebuf << std::endl;
+            if (codebuf.size() != 0)
+            {
+                std::cout << "Code: " << codebuf << std::endl;
+            }
             if (codebuf == "[") // start
             {
-                startpoints.push_back(codeptr - 2);
+                startpoints.push_back(codeptr - 1);
                 if (!tm.iszero())
                 {
                     std::cout << "Entering layer. Current layer is " << startpoints.size() << "." << std::endl;
                 } else {
                     std::cout << "Pass to the next ] in layer " << startpoints.size() << "."  << std::endl;
                     nextstate = 5;
+                    startpoints.pop_back();
                 }
             } else if (codebuf == "]") // end
             {
-                if (!tm.iszero())
-                {
+                //if (!tm.iszero())
+                //{
                     codeptr = startpoints.back();
                     startpoints.pop_back();
                     std::cout << "Return to the matching [." << std::endl;
                     nextstate = 4;
-                } else {
-                    startpoints.pop_back();
-                    std::cout << "Exiting layer. Current layer is " << startpoints.size() << std::endl;
-                }
+                //} else {
+                //    startpoints.pop_back();
+                //    std::cout << "Exiting layer. Current layer is " << startpoints.size() << std::endl;
+                //}
             }
             mvstep = 0;
             caval = 0;
@@ -143,8 +154,11 @@ void Interpreter::changestate(int nextstate)
         default:
             break;
     }
-    std::cout << "Current tape state: " << std::endl;
-    tm.print();
+    if (currentstate < 5 && (codebuf.size() != 0 || currentstate == 0))
+    {
+        std::cout << "Current tape state: " << std::endl;
+        tm.print();
+    }
     codebuf.clear();
     currentstate = nextstate;
     return;
@@ -152,7 +166,7 @@ void Interpreter::changestate(int nextstate)
 
 void Interpreter::run()
 {
-    while (codeptr < code.length() - 1)
+    while (codeptr < (int) code.length() - 1)
     {
         char c = code[codeptr];
         if (currentstate == 1 && (c == '>' || c == '<'))
@@ -198,12 +212,12 @@ void Interpreter::run()
         } else if (currentstate == 5)
         {
             std::vector<size_t> passed;
-            while (code[codeptr] != ']' && !passed.empty())
+            while (code[codeptr] != ']' || !passed.empty())
             {
                 if (code[codeptr] == '[')
                 {
                     passed.push_back(codeptr);
-                } else if (code[codeptr] == '[')
+                } else if (code[codeptr] == ']')
                 {
                     passed.pop_back();
                 }
@@ -212,33 +226,34 @@ void Interpreter::run()
             c = code[codeptr];
             codebuf.push_back(c);
             changestate(4);
+            
         } else {
             switch (c) {
                 case '>':
                     changestate(1);
-                    codebuf.push_back(c);
+                    codebuf.push_back(code[codeptr]);
                     mvstep ++;
                     break;
                 case '<':
                     changestate(1);
-                    codebuf.push_back(c);
+                    codebuf.push_back(code[codeptr]);
                     mvstep --;
                     break;
                 case '+':
                     changestate(2);
-                    codebuf.push_back(c);
+                    codebuf.push_back(code[codeptr]);
                     caval ++;
                     break;
                 case '-':
                     changestate(2);
-                    codebuf.push_back(c);
+                    codebuf.push_back(code[codeptr]);
                     caval ++;
                     positive = false;
                     break;
                 case ',':
                 case '.':
                     changestate(3);
-                    codebuf.push_back(c);
+                    codebuf.push_back(code[codeptr]);
                     break;
                 case '[':
                 case ']':
@@ -279,20 +294,24 @@ void Interpreter::changestates(int nextstate)
         case 3: // i/o
             if (codebuf == ",") // i
             {
-                char userin[1];
+                char userin;
                 std::cout << "Input character (enter for ASCII mode): ";
-                std::cin.get(userin, 1);
-                if (userin[0] == '\n')
+                std::cin.sync();
+                std::cin.ignore(std::cin.rdbuf()->in_avail(), '\n');
+                userin = std::cin.get();
+                if (userin == '\n')
                 {
                     int asciicode;
                     std::cout << "Input ASCII code: ";
+                    std::cin.sync();
+                    std::cin.ignore(std::cin.rdbuf()->in_avail(), '\n');
                     std::cin >> asciicode;
-                    userin[0] = (char) asciicode;
+                    userin = (char) asciicode;
                 }
                 std::string chartoprint;
-                chartoprint = escape(userin[0]);
-                std::cout << "Got character: " << chartoprint << " with ASCII code " << (int) userin[0] << "." << std::endl;
-                tm.input((unsigned char) userin[0]);
+                chartoprint = escape(userin);
+                std::cout << "Got character: " << chartoprint << " with ASCII code " << (int) userin << "." << std::endl;
+                tm.input((unsigned char) userin);
             } else if (codebuf == ".") // o
             {
                 unsigned char out;
@@ -304,22 +323,18 @@ void Interpreter::changestates(int nextstate)
         case 4: // loop
             if (codebuf == "[") // start
             {
-                startpoints.push_back(codeptr - 2);
+                startpoints.push_back(codeptr - 1);
                 if (!tm.iszero())
                 {
                 } else {
                     nextstate = 5;
+                    startpoints.pop_back();
                 }
             } else if (codebuf == "]") // end
             {
-                if (!tm.iszero())
-                {
-                    codeptr = startpoints.back();
-                    startpoints.pop_back();
-                    nextstate = 4;
-                } else {
-                    startpoints.pop_back();
-                }
+                codeptr = startpoints.back();
+                startpoints.pop_back();
+                nextstate = 4;
             }
             mvstep = 0;
             caval = 0;
@@ -336,7 +351,7 @@ void Interpreter::changestates(int nextstate)
 
 void Interpreter::runs()
 {
-    while (codeptr < code.length() - 1)
+while (codeptr < (int) code.length() - 1)
     {
         char c = code[codeptr];
         if (currentstate == 1 && (c == '>' || c == '<'))
@@ -382,12 +397,12 @@ void Interpreter::runs()
         } else if (currentstate == 5)
         {
             std::vector<size_t> passed;
-            while (code[codeptr] != ']' && !passed.empty())
+            while (code[codeptr] != ']' || !passed.empty())
             {
                 if (code[codeptr] == '[')
                 {
                     passed.push_back(codeptr);
-                } else if (code[codeptr] == '[')
+                } else if (code[codeptr] == ']')
                 {
                     passed.pop_back();
                 }
@@ -396,33 +411,34 @@ void Interpreter::runs()
             c = code[codeptr];
             codebuf.push_back(c);
             changestates(4);
+            
         } else {
             switch (c) {
                 case '>':
                     changestates(1);
-                    codebuf.push_back(c);
+                    codebuf.push_back(code[codeptr]);
                     mvstep ++;
                     break;
                 case '<':
                     changestates(1);
-                    codebuf.push_back(c);
+                    codebuf.push_back(code[codeptr]);
                     mvstep --;
                     break;
                 case '+':
                     changestates(2);
-                    codebuf.push_back(c);
+                    codebuf.push_back(code[codeptr]);
                     caval ++;
                     break;
                 case '-':
                     changestates(2);
-                    codebuf.push_back(c);
+                    codebuf.push_back(code[codeptr]);
                     caval ++;
                     positive = false;
                     break;
                 case ',':
                 case '.':
                     changestates(3);
-                    codebuf.push_back(c);
+                    codebuf.push_back(code[codeptr]);
                     break;
                 case '[':
                 case ']':

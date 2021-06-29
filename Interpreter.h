@@ -18,7 +18,7 @@ class Interpreter
     private:
         TM tm;
         std::string code;
-        size_t codeptr;
+        int codeptr;
         
         std::string codebuf;
         std::string output;
